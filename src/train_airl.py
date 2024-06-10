@@ -110,7 +110,7 @@ def load_model(model_path):
 
 
 def main_loop():
-    force_cudnn_initialization()
+   # force_cudnn_initialization()
 
     best_edit = 1.0
     # Open a CSV file for logging
@@ -121,6 +121,7 @@ def main_loop():
 
         for i_iter in range(1, max_iter_num + 1):
             # load_model(model_p)
+            print('iter', i_iter)
             """generate multiple trajectories that reach the minimum batch_size"""
             discrim_net.to(torch.device('cpu'))
             discrim_net.to_device(torch.device('cpu'))
@@ -135,6 +136,7 @@ def main_loop():
             #     if edit_dist < best_edit:
             #         best_edit = edit_dist
             #         save_model(model_p)
+            print('iter done', i_iter)
             if i_iter % log_interval == 0:
                 elapsed_time = time.time() - start_time
                 print(f"Iteration {i_iter}/{max_iter_num} | Elapsed Time: {elapsed_time:.2f}s")
@@ -184,7 +186,7 @@ if __name__ == '__main__':
     num_threads = 4  # number of threads for agent
     min_batch_size = 8192  # 8192  # minimal batch size per PPO update
     eval_batch_size = 8192  # 8192  # minimal batch size for evaluation
-    log_interval = 10  # interval between training status logs
+    log_interval = 2  # interval between training status logs
     save_mode_interval = 50  # interval between saving model
     max_grad_norm = 10  # max grad norm for ppo updates
     seed = 1  # random seed for parameter initialization
@@ -193,7 +195,7 @@ if __name__ == '__main__':
     optim_batch_size = 64  # optimization batch size for PPO
     cv = 0  # cross validation process [0, 1, 2, 3, 4]
     size = 1000  # size of training data [100, 1000, 10000]
-    max_iter_num = 2000  # maximal number of main iterations {100size: 1000, 1000size: 2000, 10000size: 3000}
+    max_iter_num = 150  # maximal number of main iterations {100size: 1000, 1000size: 2000, 10000size: 3000}
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     """environment"""

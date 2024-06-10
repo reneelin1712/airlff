@@ -22,7 +22,7 @@ if __name__ == '__main__':
     train_p = "../data/shortest/shortest_paths.csv"
     test_p = "../data/shortest/shortest_paths_test.csv"
     # test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-    model_p = "../shortest/shortest_bc.pt"
+    model_p = "../trained_models/shortest/shortest_bc.pt"
     """initialize road environment"""
     env = RoadWorld(network_p, edge_p)
     """load path-level and link-level feature"""

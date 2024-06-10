@@ -12,7 +12,7 @@ from model.value import ValueCNN
 from model.discriminator import DiscriminatorAIRLCNN
 
 def load_model(model_path):
-    model_dict = torch.load(model_path)
+    model_dict = torch.load(model_path, map_location=torch.device('cpu'))
     policy_net.load_state_dict(model_dict['Policy'])
     print("Policy Model loaded Successfully")
     value_net.load_state_dict(model_dict['Value'])
