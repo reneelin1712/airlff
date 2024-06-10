@@ -107,6 +107,11 @@ def evaluate_model(target_od, target_traj, model, env, n_link=424):
     state_ts = torch.from_numpy(np.arange(n_link)).long().to(device)
     target_o, target_d = target_od[:, 0].tolist(), target_od[:, 1].tolist()
     learner_traj = []
+
+    # Move model parameters to CPU
+    for param in model.parameters():
+        param.data = param.data.to(device)
+
     """compute transition matrix for the first OD pair"""
     curr_ori, curr_des = target_o[0], target_d[0]
     des_ts = (torch.ones_like(state_ts) * curr_des).to(device)

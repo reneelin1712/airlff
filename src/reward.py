@@ -11,6 +11,9 @@ from model.policy import PolicyCNN
 from model.value import ValueCNN
 from model.discriminator import DiscriminatorAIRLCNN
 
+import shap
+from sklearn.ensemble import RandomForestRegressor
+
 def load_model(model_path):
     model_dict = torch.load(model_path)
     policy_net.load_state_dict(model_dict['Policy'])
@@ -25,16 +28,17 @@ size = 1000  # size of training data [100, 1000, 10000]
 gamma = 0.99  # discount factor
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-model_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/trained_models/airl_CV%d_size%d.pt" % (cv, size)
-test_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/data/cross_validation/test_CV%d.csv" % cv
+model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
+test_p = "../data/cross_validation/test_CV%d.csv" % cv
 
 """environment"""
-edge_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/data/edge.txt"
-network_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/data/transit.npy"
-path_feature_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/data/feature_od.npy"
-train_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-test_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/data/cross_validation/test_CV%d.csv" % cv
-model_p = "C:/AI/rcm-airl-my-data/RCM-AIRL/trained_models/airl_CV%d_size%d.pt" % (cv, size)
+edge_p = "../data/edge.txt"
+network_p = "../data/transit.npy"
+path_feature_p = "../data/feature_od.npy"
+train_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+test_p = "../data/cross_validation/test_CV%d.csv" % cv
+# test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
 
 """initialize road environment"""
 od_list, od_dist = ini_od_dist(train_p)
@@ -63,14 +67,33 @@ discrim_net = DiscriminatorAIRLCNN(env.n_actions, gamma, env.policy_mask,
                                    env.pad_idx).to(device)
 
 def evaluate_rewards(test_traj, policy_net, discrim_net, env):
+    # device = next(policy_net.parameters()).device  # Get the device of the policy_net
+    device = torch.device('cpu')  # Use CPU device
+    policy_net.to(device)  # Move policy_net to CPU
+    discrim_net.to(device)  # Move discrim_net to CPU
+
     reward_data = []
+
+    input_features = []
+    output_rewards = []
     for episode_idx, episode in enumerate(test_traj):
         des = torch.LongTensor([episode[-1].next_state]).long().to(device)
         for step_idx, x in enumerate(episode):
             state = torch.LongTensor([x.cur_state]).to(device)
             next_state = torch.LongTensor([x.next_state]).to(device)
             action = torch.LongTensor([x.action]).to(device)
+
+            # Collect input features
+            with torch.no_grad():
+                neigh_path_feature, neigh_edge_feature = discrim_net.get_input_features(state, des, action)
+                input_features.append(torch.cat((neigh_path_feature, neigh_edge_feature), dim=-1).squeeze().cpu().numpy())
             
+            # Collect output rewards
+            with torch.no_grad():
+                log_prob = policy_net.get_log_prob(state, des, action).squeeze()
+                reward = discrim_net.calculate_reward(state, des, action, log_prob, next_state).item()
+                output_rewards.append([reward])
+
             action_rewards = []
             for a in env.get_action_list(x.cur_state):
                 action_tensor = torch.LongTensor([a]).to(device)
@@ -78,9 +101,9 @@ def evaluate_rewards(test_traj, policy_net, discrim_net, env):
                     log_prob = policy_net.get_log_prob(state, des, action_tensor).squeeze()
                     reward = discrim_net.calculate_reward(state, des, action_tensor, log_prob, next_state).item()
                 action_rewards.append((a, reward))
-            
+
             max_reward_action = max(action_rewards, key=lambda x: x[1])
-            
+
             reward_data.append({
                 'episode': episode_idx + 1,
                 'step': step_idx + 1,
@@ -91,7 +114,7 @@ def evaluate_rewards(test_traj, policy_net, discrim_net, env):
                 'max_reward_action': max_reward_action[0],
                 'max_reward': max_reward_action[1]
             })
-            
+
             for a, r in action_rewards:
                 reward_data.append({
                     'episode': episode_idx + 1,
@@ -104,13 +127,87 @@ def evaluate_rewards(test_traj, policy_net, discrim_net, env):
                     'max_reward': None,
                     'action_reward': r
                 })
-    
+
     reward_df = pd.DataFrame(reward_data)
-    return reward_df
+
+    # Convert collected data to numpy arrays
+    input_features = np.array(input_features)
+    output_rewards = np.array(output_rewards)
+    return reward_df, input_features, output_rewards
 
 """Evaluate rewards"""
 test_trajs = env.import_demonstrations_step(test_p)
-reward_df = evaluate_rewards(test_trajs, policy_net, discrim_net, env)
+# reward_df = evaluate_rewards(test_trajs, policy_net, discrim_net, env)
 
-# Save the DataFrame to a CSV file
-reward_df.to_csv('reward_data.csv', index=False)
+# # Save the DataFrame to a CSV file
+# reward_df.to_csv('reward_data.csv', index=False)
+
+
+# Collect input features and output rewards
+reward_df, input_features, output_rewards = evaluate_rewards(test_trajs, policy_net, discrim_net, env)
+print('input_features',len(input_features))
+print('output_rewards',len(output_rewards))
+
+# # Create a dictionary to map input features to their corresponding output rewards
+feature_reward_dict = {tuple(feature): reward for feature, reward in zip(input_features, output_rewards)}
+
+# def predict_reward(input_features_matrix):
+#     # Convert input_features_matrix to a list of tuples
+#     input_features_tuples = [tuple(feature) for feature in input_features_matrix]
+    
+#     # Look up the corresponding rewards for each input feature tuple
+#     rewards = [feature_reward_dict.get(feature_tuple, 0) for feature_tuple in input_features_tuples]
+    
+#     return np.array(rewards)
+
+def predict_reward(input_features_matrix):
+    # Convert input_features_matrix to a list of tuples
+    input_features_tuples = [tuple(feature) for feature in input_features_matrix]
+    
+    # Look up the corresponding rewards for each input feature tuple
+    rewards = []
+    for feature_tuple in input_features_tuples:
+        if feature_tuple in feature_reward_dict:
+            reward = feature_reward_dict[feature_tuple]
+        else:
+            # If the feature tuple is not found, assign a default reward with the same shape as other rewards
+            reward = np.zeros_like(next(iter(feature_reward_dict.values())))
+        rewards.append(reward)
+    
+    return np.array(rewards)
+
+# # # Calculate SHAP values using KernelExplainer
+# explainer = shap.KernelExplainer(predict_reward, input_features[0:10])
+# shap_values = explainer.shap_values(input_features[100:200])
+
+# Calculate SHAP values using KernelExplainer
+background_size = 100
+explained_size = 10
+explainer = shap.KernelExplainer(predict_reward, input_features[:background_size])
+shap_values = explainer.shap_values(input_features[background_size:background_size+explained_size])
+print('shap_values',shap_values)
+
+# Plot the SHAP summary plot
+shap.summary_plot(shap_values, input_features[background_size:background_size+explained_size], plot_type="dot")
+
+
+# feature_names = [i for i in range(19)]
+# print('feature_names',feature_names)
+# # Visualize SHAP values
+# shap.summary_plot(shap_values, input_features, plot_type="bar", feature_names=feature_names)
+
+
+# Create feature names based on indices
+num_features = input_features.shape[1]
+feature_names = ['Feature ' + str(i) for i in range(num_features)]
+
+# Plot the SHAP summary plot with feature names
+shap.summary_plot(shap_values, input_features[100:110], plot_type="bar", feature_names=feature_names)
+
+# # Train a surrogate model
+# surrogate_model = RandomForestRegressor(n_estimators=100, random_state=42)
+# surrogate_model.fit(input_features, output_rewards)
+
+# # Calculate SHAP values
+# explainer = shap.TreeExplainer(surrogate_model)
+# shap_values = explainer.shap_values(input_features)

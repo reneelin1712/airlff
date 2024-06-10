@@ -45,10 +45,3 @@ updated_df = find_and_delete_link_id_pairs(csv_file_path)
 
 # Save the updated DataFrame to a new CSV file
 updated_df.to_csv('updated_transit.csv', index=False)
-
-# # Load the CSV file
-# data = np.loadtxt('transit.csv', skiprows=1, delimiter=',', dtype=int)
-# print('run')
-
-# # Save the data to a .npy file
-# np.save('transit.npy', data)

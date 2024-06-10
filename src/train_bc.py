@@ -13,7 +13,7 @@ if __name__ == '__main__':
     max_length = 50  # maximum path length for recursively generating next link until destination is reached
     cv = 0  # cross validation process [0, 1, 2, 3, 4]
     size = 1000  # # size of training data [100, 1000, 10000]
-    max_iter_num = 100
+    max_iter_num = 6
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     edge_p = "../data/edge.txt"

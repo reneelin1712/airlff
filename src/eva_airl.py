@@ -64,6 +64,7 @@ discrim_net = DiscriminatorAIRLCNN(env.n_actions, gamma, env.policy_mask,
                                    env.pad_idx).to(device)
 
 
+
 def evaluate_rewards(test_traj, test_weather, policy_net, discrim_net, env):
     device = torch.device('cpu')  # Use CPU device
     policy_net.to(device)  # Move policy_net to CPU
@@ -116,6 +117,19 @@ def evaluate_rewards(test_traj, test_weather, policy_net, discrim_net, env):
     return reward_df
 
 
+def create_background_data(train_path, sample_size=100):
+    df = pd.read_csv(train_path)
+    sample_df = df.sample(n=sample_size)
+    ori = torch.LongTensor(sample_df['ori'].values)
+    des = torch.LongTensor(sample_df['des'].values)
+    return ori, des
+
+
+def prepare_input_data(target_od, target_traj):
+    ori = torch.LongTensor(target_od[:, 0])
+    des = torch.LongTensor(target_od[:, 1])
+    return ori, des
+
 if __name__ == '__main__':
     # Load the trained models
     load_model(model_p)
@@ -142,3 +156,5 @@ if __name__ == '__main__':
     # # Evaluate rewards
     # reward_df = evaluate_rewards(test_trajs, test_weather, policy_net, discrim_net, env)
     # reward_df.to_csv('reward_data.csv', index=False)
+
+ 

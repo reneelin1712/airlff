@@ -96,6 +96,15 @@ class DiscriminatorAIRLCNN(nn.Module):
         with torch.no_grad():
             logits = self.forward(states, des, act, log_pis, next_states)
             return -F.logsigmoid(-logits)
+        
+    def get_input_features(self, state, des, act):
+        state_neighbor = self.action_state_pad[state]
+        neigh_path_feature = self.path_feature[state_neighbor, des.unsqueeze(1).repeat(1, self.action_num + 1), :]
+        neigh_edge_feature = self.link_feature[state_neighbor, :]
+
+        current_path_feature = neigh_path_feature[:, act, :][0,-1,:]
+        current_edge_feature = neigh_edge_feature[:, act, :][0,-1,:]
+        return current_path_feature, current_edge_feature
 
 
 class DiscriminatorCNN(nn.Module):

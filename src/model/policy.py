@@ -38,6 +38,8 @@ class PolicyCNN(nn.Module):
         self.new_index = self.new_index.to(device)
 
     def process_features(self, state, des):
+
+        # self.action_state_pad = self.action_state_pad.to(state.device)
         state_neighbor = self.action_state_pad[state]
         neigh_path_feature = self.path_feature[state_neighbor, des.unsqueeze(1).repeat(1, self.action_num + 1), :]
         neigh_edge_feature = self.link_feature[state_neighbor, :]
