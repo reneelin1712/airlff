@@ -205,7 +205,7 @@ if __name__ == '__main__':
     train_p = "../data/shortest/shortest_paths.csv"
     test_p = "../data/shortest/shortest_paths_test.csv"
     # test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-    model_p = "../shortest/shortest.pt"
+    model_p = "../trained_models/shortest/shortest.pt"
     """inialize road environment"""
     od_list, od_dist = ini_od_dist(train_p)
     env = RoadWorld(network_p, edge_p, pre_reset=(od_list, od_dist))
