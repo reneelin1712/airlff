@@ -32,10 +32,17 @@ test_p = "../data/cross_validation/test_CV%d.csv" % cv
 edge_p = "../data/edge.txt"
 network_p = "../data/transit.npy"
 path_feature_p = "../data/feature_od.npy"
-train_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-test_p = "../data/cross_validation/test_CV%d.csv" % cv
+# train_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+# # test_p = "../data/cross_validation/test_CV%d.csv" % cv
+# # test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+# test_p = "../data/shortest/shortest_paths_test.csv"
+
+# model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
+train_p = "../data/shortest/shortest_paths.csv"
+test_p = "../data/shortest/shortest_paths_test.csv"
 # test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
+model_p = "../trained_models/shortest/shortest.pt"
+
 """inialize road environment"""
 od_list, od_dist = ini_od_dist(train_p)
 env = RoadWorld(network_p, edge_p, pre_reset=(od_list, od_dist))
@@ -138,6 +145,8 @@ if __name__ == '__main__':
     start_time = time.time()
     evaluate_model(test_od, test_trajs, policy_net, env)
     print('test time', time.time() - start_time)
+    # save_learner_trajectories(learner_trajs, env)
+
     
     # # Evaluate the model on test data
     # test_trajs, test_od_weather = load_test_traj(test_p)

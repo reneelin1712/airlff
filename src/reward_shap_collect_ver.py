@@ -139,26 +139,11 @@ def evaluate_rewards(test_traj, policy_net, discrim_net, env):
 test_trajs = env.import_demonstrations_step(test_p)
 # reward_df = evaluate_rewards(test_trajs, policy_net, discrim_net, env)
 
-# # Save the DataFrame to a CSV file
-# reward_df.to_csv('reward_data.csv', index=False)
-
-
 # Collect input features and output rewards
 reward_df, input_features, output_rewards = evaluate_rewards(test_trajs, policy_net, discrim_net, env)
-print('input_features',len(input_features))
-print('output_rewards',len(output_rewards))
 
 # # Create a dictionary to map input features to their corresponding output rewards
 feature_reward_dict = {tuple(feature): reward for feature, reward in zip(input_features, output_rewards)}
-
-# def predict_reward(input_features_matrix):
-#     # Convert input_features_matrix to a list of tuples
-#     input_features_tuples = [tuple(feature) for feature in input_features_matrix]
-    
-#     # Look up the corresponding rewards for each input feature tuple
-#     rewards = [feature_reward_dict.get(feature_tuple, 0) for feature_tuple in input_features_tuples]
-    
-#     return np.array(rewards)
 
 def predict_reward(input_features_matrix):
     # Convert input_features_matrix to a list of tuples
@@ -176,38 +161,28 @@ def predict_reward(input_features_matrix):
     
     return np.array(rewards)
 
-# # # Calculate SHAP values using KernelExplainer
-# explainer = shap.KernelExplainer(predict_reward, input_features[0:10])
-# shap_values = explainer.shap_values(input_features[100:200])
 
 # Calculate SHAP values using KernelExplainer
 background_size = 100
-explained_size = 10
+explained_size = 100
 explainer = shap.KernelExplainer(predict_reward, input_features[:background_size])
-shap_values = explainer.shap_values(input_features[background_size:background_size+explained_size])
-print('shap_values',shap_values)
-
-# Plot the SHAP summary plot
-shap.summary_plot(shap_values, input_features[background_size:background_size+explained_size], plot_type="dot")
+shap_values = explainer.shap_values(input_features[:background_size])
 
 
-# feature_names = [i for i in range(19)]
-# print('feature_names',feature_names)
-# # Visualize SHAP values
-# shap.summary_plot(shap_values, input_features, plot_type="bar", feature_names=feature_names)
+shap_values_squeezed = np.squeeze(shap_values)
 
+# Now shap_values_squeezed should have shape (10, 19), suitable for DataFrame conversion
+# Create feature names for the columns
+feature_names = ['Feature ' + str(i) for i in range(shap_values_squeezed.shape[1])]
 
-# Create feature names based on indices
-num_features = input_features.shape[1]
-feature_names = ['Feature ' + str(i) for i in range(num_features)]
+# Convert SHAP values to a DataFrame
+shap_values_df = pd.DataFrame(shap_values_squeezed, columns=feature_names)
+
+# Save the DataFrame to a CSV file
+shap_values_df.to_csv('shap_values.csv', index=False)
+
+# Print the path to the saved file for confirmation
+print("SHAP values saved to 'shap_values.csv'")
 
 # Plot the SHAP summary plot with feature names
-shap.summary_plot(shap_values, input_features[100:110], plot_type="bar", feature_names=feature_names)
-
-# # Train a surrogate model
-# surrogate_model = RandomForestRegressor(n_estimators=100, random_state=42)
-# surrogate_model.fit(input_features, output_rewards)
-
-# # Calculate SHAP values
-# explainer = shap.TreeExplainer(surrogate_model)
-# shap_values = explainer.shap_values(input_features)
+shap.summary_plot(shap_values_squeezed, input_features[:background_size], plot_type="bar", feature_names=feature_names)

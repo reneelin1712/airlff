@@ -4,6 +4,8 @@ from scipy.spatial import distance
 from nltk.translate.bleu_score import SmoothingFunction
 import numpy as np
 import torch
+import pandas as pd
+import csv
 
 smoothie = SmoothingFunction().method1
 device = torch.device("cpu")
@@ -36,6 +38,12 @@ def evaluate_edit_dist(test_trajs, learner_trajs, test_od_dict):
 
 
 def evaluate_bleu_score(test_trajs, learner_trajs, test_od_dict):
+    # print('test_trajs',test_trajs[0])
+    # print('learner_trajs',learner_trajs[0])
+    # print('test_trajs',test_trajs[1])
+    # print('learner_trajs',learner_trajs[1])
+    # print('test_trajs',test_trajs[2])
+    # print('learner_trajs',learner_trajs[2])
     bleu_score_list = []
     for od in test_od_dict.keys():
         idx_list = test_od_dict[od]
@@ -48,6 +56,17 @@ def evaluate_bleu_score(test_trajs, learner_trajs, test_od_dict):
             # print(learner)
             bleu_score = sentence_bleu(test_od_trajs, learner, smoothing_function=smoothie)
             bleu_score_list.append(bleu_score)
+
+        # Save test and learner trajectories side by side in a CSV file
+    with open('trajectories.csv', 'w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(['Test Trajectory', 'Learner Trajectory'])
+        
+        for test_traj, learner_traj in zip(test_trajs, learner_trajs):
+            test_traj_str = '_'.join(test_traj)
+            learner_traj_str = '_'.join(learner_traj)
+            csv_writer.writerow([test_traj_str, learner_traj_str])
+
     return np.mean(bleu_score_list)
 
 
@@ -159,3 +178,29 @@ def evaluate_model(target_od, target_traj, model, env, n_link=424):
     evaluate_metrics(target_traj, learner_traj)
 
     return learner_traj  # Return the generated trajectories
+
+
+# def save_learner_trajectories(learner_trajs, env):
+#     # Create a list to store the trajectory data
+#     trajectory_data = []
+
+#     for episode_idx, episode_traj in enumerate(learner_trajs):
+#         curr_state = int(episode_traj[0])
+#         for step_idx, next_state_str in enumerate(episode_traj[1:], start=1):
+#             next_state = int(next_state_str)
+#             action = np.where(env.state_action[curr_state] == next_state)[0][0]
+
+#             # Append the trajectory data to the list
+#             trajectory_data.append({
+#                 'episode': episode_idx,
+#                 'step': step_idx,
+#                 'learner_trajectory': '_'.join(episode_traj[:step_idx+1]),
+#                 'action': action
+#             })
+
+#             curr_state = next_state
+
+#     # Save the trajectory data to a CSV file
+#     trajectory_df = pd.DataFrame(trajectory_data)
+#     trajectory_df.to_csv('learner_trajectories.csv', index=False)
+
