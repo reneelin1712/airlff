@@ -35,8 +35,8 @@ edge_p = "../data/edge.txt"
 network_p = "../data/transit.npy"
 path_feature_p = "../data/feature_od.npy"
 train_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-test_p = "../data/cross_validation/test_CV%d.csv" % cv
-# test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+# test_p = "../data/cross_validation/test_CV%d.csv" % cv
+test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
 model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
 
 """initialize road environment"""
@@ -211,7 +211,7 @@ def create_shap_explainer(model, input_features):
     # Stack the input features along a new axis to create the background data
     input_features_array = np.array(input_features)
     # Create the background dataset
-    background_data = shap.sample(input_features_array, 10) 
+    background_data = shap.sample(input_features_array, 50) 
 
     explainer = shap.KernelExplainer(predict_fn, background_data)
     return explainer
@@ -347,7 +347,7 @@ feature_names_dict = {
 }
 
 selected_feature_indices = [76,77,78,79,80,81,82,83,84,85,86]
-analyze_shap_values(explainer, input_features[0:2],selected_feature_indices )
+analyze_shap_values(explainer, input_features[0:200],selected_feature_indices )
 
 
 
