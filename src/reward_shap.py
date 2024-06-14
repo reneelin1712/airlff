@@ -34,10 +34,15 @@ test_p = "../data/cross_validation/test_CV%d.csv" % cv
 edge_p = "../data/edge.txt"
 network_p = "../data/transit.npy"
 path_feature_p = "../data/feature_od.npy"
-train_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-test_p = "../data/cross_validation/test_CV%d.csv" % cv
+# train_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+# test_p = "../data/cross_validation/test_CV%d.csv" % cv
+# # test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
+# model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
+
+train_p = "../data/shortest/shortest_paths.csv"
+test_p = "../data/shortest/shortest_paths.csv"
 # test_p = "../data/cross_validation/train_CV%d_size%d.csv" % (cv, size)
-model_p = "../trained_models/airl_CV%d_size%d.pt" % (cv, size)
+model_p = "../trained_models/shortest/shortest.pt"
 
 """initialize road environment"""
 od_list, od_dist = ini_od_dist(train_p)
@@ -343,11 +348,18 @@ feature_names_dict = {
     83: 'freq_road_type_3',
     84: 'freq_road_type_4',
     85: 'freq_road_type_5',
-    86: 'freq_road_type_6'
+    86: 'freq_road_type_6',
+    # 88: 'link_length',
+    # 89: 'road_type_1',
+    # 90: 'road_type_2',
+    # 91: 'road_type_3',
+    # 92: 'road_type_4',
+    # 93: 'road_type_5',
+    # 94: 'road_type_6',
 }
 
-selected_feature_indices = [76,77,78,79,80,81,82,83,84,85,86]
-analyze_shap_values(explainer, input_features[0:2],selected_feature_indices )
+selected_feature_indices = [76,77,78,79,80,81,82,83,84,85,86,] #88,89,90,91,92,93,94
+analyze_shap_values(explainer, input_features[0:20],selected_feature_indices )
 
 
 
